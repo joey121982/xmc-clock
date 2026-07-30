@@ -1,0 +1,4 @@
+loadfile build/xmc_clock.hex
+r
+g
+q
