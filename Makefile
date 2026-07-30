@@ -8,8 +8,8 @@ SIZE = arm-none-eabi-size
 # Directories
 SRC_DIR = src
 INC_DIR = src/include
-XMCLIB_DIR = mtb-xmclib-cat3
-CMSIS_CORE_DIR = lib/CMSIS_5/CMSIS/Core
+XMCLIB_DIR = lib/xmclib
+CMSIS_CORE_DIR = lib/CMSIS/CMSIS/Core
 RTT_DIR = lib/RTT/RTT
 RTT_CONFIG_DIR = lib/RTT/Config
 RTT_SYS_DIR = lib/RTT/Syscalls
