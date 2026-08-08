@@ -1,34 +1,49 @@
-#include "xmc_gpio.h"
-#include "SEGGER_RTT.h"
-
 #include <stdint.h>
 #include <stdbool.h>
 
-#define LED1_PORT XMC_GPIO_PORT1
-#define LED1_PIN  0U
+#include "xmc_gpio.h"
+#include "SEGGER_RTT.h"
 
-void delay(volatile uint32_t cycles) {
-    while(cycles--) {
-        __asm("nop");
-    }
+#include "delay.h"
+#include "dht.h"
+
+#define DHT_PIN XMC_GPIO_PORT0, 14
+
+void SysTick_Handler(void) { /* empty */ }
+
+void setup() {
+    SysTick_Config(SystemCoreClock / 1000);
+
+    XMC_GPIO_Init(DHT_PIN, (&(XMC_GPIO_CONFIG_t) {
+        .mode         = XMC_GPIO_MODE_OUTPUT_OPEN_DRAIN,
+        .output_level = XMC_GPIO_OUTPUT_LEVEL_HIGH
+    }));
 }
 
 int main(void) {
-    XMC_GPIO_CONFIG_t config = {
-        .mode = XMC_GPIO_MODE_OUTPUT_PUSH_PULL,
-        .output_level = XMC_GPIO_OUTPUT_LEVEL_LOW,
-    };
-
-    XMC_GPIO_Init(LED1_PORT, LED1_PIN, &config);
-
+    setup();
+    SEGGER_RTT_Init();
+    
     while(1) {
-        static bool led_status = 1;
-        XMC_GPIO_ToggleOutput(LED1_PORT, LED1_PIN);
+        uint32_t raw_data = read_temp(DHT_PIN);
+        
+        if (raw_data == DHT_ERR) {
+            SEGGER_RTT_printf(0, "Sensor Error: Timeout fail\n");
+        } else if (raw_data == DHT_CHKSUM_ERR) {
+            SEGGER_RTT_printf(0, "Sensor Error: Checksum fail\n");
+        } else {
+            int32_t temp_tenths = (int32_t)raw_data;
+            int32_t temp_int = temp_tenths / 10;
+            int32_t temp_dec = temp_tenths % 10;
+            
+            if (temp_dec < 0) {
+                temp_dec = -temp_dec;
+            }
 
-        SEGGER_RTT_printf(0, "Turned LED %s.\r\n", led_status ? "on" : "off");
-        led_status = !led_status;
-
-        delay(1000000);
+            SEGGER_RTT_printf(0, "Temperature: %d.%d C\n", temp_int, temp_dec);
+        }
+        
+        delay_ms(3000); 
     }
     
     return 0;
